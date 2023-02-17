@@ -41,13 +41,16 @@ C
       DO 50 I = 1, M
         IC1(I) = 1
         IC2(I) = 2
+C       compute distanace to first two centers to initialize IC1(I) and IC2(I)
         DO IL = 1, 2
+C         Compute square distance of A(I) and C(IL), store in DT(IL)
           DT(IL) = ZERO
           DO J = 1, N
             DA = A(I,J) - C(IL,J)
             DT(IL) = DT(IL) + DA*DA
           end DO
         end DO ! IL
+C       initialize IC1(I) and IC2(I)
         IF (DT(1) .GT. DT(2)) THEN
           IC1(I) = 2
           IC2(I) = 1
@@ -55,6 +58,7 @@ C
           DT(1) = DT(2)
           DT(2) = TEMP
         END IF
+C       loop over centers 3 to K and update IC1 and IC2
         DO 50 L = 3, K
           DB = ZERO
           DO J = 1, N
@@ -76,12 +80,15 @@ C
 C     Update cluster centres to be the average of points contained
 C     within them.
 C     NC(L) := #{units in cluster L},  L = 1..K
+
+C     Initialize centers C and center count NC to zero
       DO L = 1, K
         NC(L) = 0
         DO J = 1, N
            C(L,J) = ZERO
         end DO
       end DO
+C     set centers to sum of all associated points and set center counts NC
       DO I = 1, M
         L = IC1(I)
         NC(L) = NC(L) + 1
@@ -93,10 +100,12 @@ C
 C     Check to see if there is any empty cluster at this stage
 C
       DO L = 1, K
+C       Return Fault if empty cluster found
         IF (NC(L) .EQ. 0) THEN
           IFAULT = 1
           RETURN
         END IF
+C       divide sum of points by number of points to compute center
         AA = NC(L)
         DO J = 1, N
            C(L,J) = C(L,J) / AA
