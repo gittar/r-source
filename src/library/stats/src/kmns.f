@@ -255,6 +255,7 @@ C     If L1 has not yet been updated in this stage, no need to
 C     re-compute D(I).
 C
         IF (NCP(L1) .ne. 0) then
+C          DE := Square Distance of A(I) and C(L1)
            DE = ZERO
            do J = 1, N
               DF = A(I,J) - C(L1,J)
@@ -265,12 +266,18 @@ C
 C
 C     Find the cluster with minimum R2.
 C
+
+C       DA := Square Distance of A(I) and C(L2)
         DA = ZERO
         do J = 1, N
           DB = A(I,J) - C(L2,J)
           DA = DA + DB*DB
         end do
         R2 = DA * AN2(L2)
+        
+C
+C       Loop over all Centers
+C
         DO 60 L = 1, K
 C
 C     If I >= LIVE(L1), then L1 is not in the live set.   If this is
@@ -281,6 +288,7 @@ C
            IF (I .GE. LIVE(L1) .AND. I .GE. LIVE(L) .OR. L .EQ. L1 .OR.
      *          L .EQ. LL) GO TO 60
            RR = R2 / AN2(L)
+C          DC := Square distance of A(I) and C(L)
            DC = ZERO
            do J = 1, N
               DD = A(I,J) - C(L,J)
@@ -291,9 +299,11 @@ C
            L2 = L
  60     CONTINUE
         IF (R2 .ge. D(I)) then
+C     No transfer
 C     If no transfer is necessary, L2 is the new IC2(I).
            IC2(I) = L2
         ELSE
+C     Transfer!
 C
 C     Update cluster centres, LIVE, NCP, AN1 & AN2 for clusters L1 and
 C     L2, and update IC1(I) & IC2(I).
@@ -310,13 +320,16 @@ C     L2, and update IC1(I) & IC2(I).
             C(L1,J) = (C(L1,J) * AL1 - A(I,J)) / ALW
             C(L2,J) = (C(L2,J) * AL2 + A(I,J)) / ALT
           end do
+C         Update cluster sizes
           NC(L1) = NC(L1) - 1
           NC(L2) = NC(L2) + 1
+C         Recompute factors
           AN2(L1) = ALW / AL1
           AN1(L1) = BIG
           IF (ALW .GT. ONE) AN1(L1) = ALW / (ALW - ONE)
           AN1(L2) = ALT / AL2
           AN2(L2) = ALT / (ALT + ONE)
+C         Transfer to cluster L2
           IC1(I) = L2
           IC2(I) = L1
         END IF
@@ -411,15 +424,17 @@ C
            DO J = 1, N
               DE = A(I,J) - C(L2,J)
               DD = DD + DE*DE
+C             if no improvement for this point, take next point (via goto)
               IF (DD .GE. R2) GO TO 60
            end DO
-C
+C     Improvement: Do the transfer
 C     Update cluster centres, NCP, NC, ITRAN, AN1 & AN2 for clusters
 C     L1 & L2.   Also update IC1(I) & IC2(I).   Note that if any
 C     updating occurs in this stage, INDX is set back to 0.
 C
            ICOUN = 0
            INDX = 0
+C          add to live set
            ITRAN(L1) = 1
            ITRAN(L2) = 1
            NCP(L1) = ISTEP + M
@@ -428,17 +443,21 @@ C
            ALW = AL1 - ONE
            AL2 = NC(L2)
            ALT = AL2 + ONE
+C          Adjust centers
            DO J = 1, N
               C(L1,J) = (C(L1,J) * AL1 - A(I,J)) / ALW
               C(L2,J) = (C(L2,J) * AL2 + A(I,J)) / ALT
            end DO
+C          Adjust cluster sizes
            NC(L1) = NC(L1) - 1
            NC(L2) = NC(L2) + 1
+C          Re-Compute factors
            AN2(L1) = ALW / AL1
            AN1(L1) = BIG
            IF (ALW .GT. ONE) AN1(L1) = ALW / (ALW - ONE)
            AN1(L2) = ALT / AL2
            AN2(L2) = ALT / (ALT + ONE)
+C          Transfer to cluster L2
            IC1(I) = L2
            IC2(I) = L1
         end if
